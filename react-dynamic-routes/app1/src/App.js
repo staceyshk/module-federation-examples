@@ -10,12 +10,13 @@ const MainPage = () => {
           '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
       }}
     >
-    <h1>Dynamic System Host</h1>
+    <h1>React Dynamic Routes</h1>
     <h2>App 1</h2>
     <p>
-      The Dynamic System will take advantage Module Federation <strong>remotes</strong> and{' '}
+      The Dynamic Routes will take advantage Module Federation <strong>remotes</strong> and{' '}
       <strong>exposes</strong>. It will not load any components or modules that have been loaded
-      already.
+      already. It will create the routes at runtime from a json list. The goal is to support a list
+      of remotes in a registry, such that we don't need to redeploy the host when we add new remotes.
     </p>
     <Link to='app2'>Go to App 2</Link>
     <br />
@@ -24,34 +25,27 @@ const MainPage = () => {
   </div>)
 }
 
-const App2Component = React.lazy(() => importRemote(
-  { url: remoteListJson.remotes[0].url,
-    scope: remoteListJson.remotes[0].scope,
-    module: remoteListJson.remotes[0].module
-  }
-));
+const AppComponent = (elementJson, index) => {
+  const RemoteComponent = React.lazy(() => importRemote(
+    { url: elementJson.url,
+      scope: elementJson.scope,
+      module: elementJson.module
+    })
+  );
+  const path = `${elementJson.scope}/*`;
+  return (<Route key={index} path={path} element={ <RemoteComponent /> } />); 
+}
 
-const App3Component = React.lazy(() => importRemote(
-  { url: remoteListJson.remotes[1].url,
-    scope: remoteListJson.remotes[1].scope,
-    module: remoteListJson.remotes[1].module
-  }
-));
-
-function App() {
-
+export default function App() {
   return (
     <BrowserRouter>
      <React.Suspense fallback="Loading System">
         <Routes>
           <Route path='/' element= { <MainPage />}/>
-          <Route path='/app2/*' element={ <App2Component /> } />
-          <Route path='/app3/*' element={ <App3Component />} />
+          {remoteListJson.remotes.map((elementJson, index) => AppComponent(elementJson, index))}
           <Route path='*' element= { <h1>Error</h1> }/>
         </Routes>
       </React.Suspense>
     </BrowserRouter>
   );
 }
-
-export default App;
